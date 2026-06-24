@@ -65,7 +65,10 @@ Validated sample result:
   default and can be overridden with `PYTORCH_INDEX_URL`.
 - Linux arm64 packages are generated but still need runtime validation on an
   arm64 Linux system.
-- Windows and macOS launchers are scaffolded; full runtime validation is pending.
+- Windows x86_64 packaging is available as `EdgeAI-DeployKit-windows-x86_64.zip`
+  with `start-windows.bat` and `stop-windows.bat`; full Windows runtime
+  validation is in progress.
+- macOS launchers are scaffolded; full runtime validation is pending.
 
 ## Generated Artifacts
 
@@ -79,4 +82,4 @@ Current package names:
 
 - `EdgeAI-DeployKit-linux-x86_64.tar.gz`
 - `EdgeAI-DeployKit-linux-arm64.tar.gz`
-
+- `EdgeAI-DeployKit-windows-x86_64.zip`

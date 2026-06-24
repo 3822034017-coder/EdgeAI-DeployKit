@@ -10,13 +10,16 @@ test input, runs local inference, and shows a useful result.
 
 ## Current Status
 
-The Linux local inference path is the primary validated path.
+The Linux local inference path is the primary validated path. Windows packaging
+is now available as a portable zip with a one-click starter.
 
 - Linux x86_64 release package: validated on openEuler 24.03 in VMware.
 - Linux arm64 release package: package is generated; runtime validation should
   be done on an arm64 Linux VM or device.
-- Windows and macOS packages: release naming and launchers are scaffolded, but
-  full runtime validation is still pending.
+- Windows x86_64 release package: zip package with `start-windows.bat` and
+  `stop-windows.bat`; runtime validation is in progress.
+- macOS packages: release naming and launchers are scaffolded, but full runtime
+  validation is still pending.
 
 Validated model paths:
 
@@ -93,6 +96,41 @@ Check services:
 ./start-linux.sh status
 ```
 
+## Quick Start On Windows
+
+Download:
+
+- `EdgeAI-DeployKit-windows-x86_64.zip`
+
+Extract the zip, then double-click:
+
+```text
+start-windows.bat
+```
+
+The first run creates a local `.venv`, installs Python dependencies, installs
+WebUI dependencies, starts the backend and WebUI, and opens:
+
+```text
+http://127.0.0.1:3000/workspace
+```
+
+To stop the local services, double-click:
+
+```text
+stop-windows.bat
+```
+
+Optional conversion dependencies can be installed from PowerShell:
+
+```powershell
+.\start-windows.bat -WithPytorch
+.\start-windows.bat -WithTensorflow
+```
+
+Windows prerequisites: Python 3.9-3.13 and Node.js 20+ with Corepack. Python
+3.10-3.12 is recommended for best AI package compatibility.
+
 ## WebUI Flow
 
 1. Upload a model file or enter a server-side model path.
@@ -144,6 +182,7 @@ backup files.
 ## Documentation
 
 - Linux release guide: `docs/LINUX_LOCAL_RELEASE.md`
+- Windows release guide: `docs/WINDOWS_LOCAL_RELEASE.md`
 - Release packaging notes: `docs/RELEASE_PACKAGING.md`
 - Local task system notes: `docs/LOCAL_TASK_SYSTEM_GUIDE.md`
 - Conversion wizard notes: `docs/CONVERT_SMART_WIZARD_GUIDE.md`
@@ -159,4 +198,3 @@ python -m edgeai.cli
 
 This keeps the release package self-contained around its `.venv` and avoids
 depending on a globally installed `edgeai` command.
-

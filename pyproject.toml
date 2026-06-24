@@ -22,7 +22,7 @@ dependencies = [
 
 [project.optional-dependencies]
 webui = ["streamlit", "pandas"]
-pdf   = ["weasyprint"]
+pdf   = ["weasyprint", "reportlab"]
 pytorch = ["torch", "torchvision"]
 tensorflow = ["tensorflow-cpu", "tf2onnx", "h5py"]
 full  = ["edgeai-deploykit[webui,pdf,pytorch,tensorflow]"]

@@ -37,7 +37,7 @@ def _short(v: Any, max_len: int = 160) -> str:
     return s if len(s) <= max_len else s[: max_len - 3] + "..."
 
 
-def _load_label_map(package_dir: Path) -> Tuple[Optional[Any], Optional[Path]]:
+def _load_label_map(package_dir: Path, extra_candidates: Optional[Iterable[Path]] = None) -> Tuple[Optional[Any], Optional[Path]]:
     """Load optional labels.
 
     Supported formats:
@@ -45,7 +45,7 @@ def _load_label_map(package_dir: Path) -> Tuple[Optional[Any], Optional[Path]]:
     - label_map.json as dict: {"0": "class0", "1": "class1"}
     - imagenet_classes.txt: one label per line
     """
-    candidates = [
+    candidates = list(extra_candidates or []) + [
         package_dir / "label_map.json",
         package_dir / "labels.json",
         package_dir / "imagenet_classes.txt",
@@ -333,7 +333,16 @@ def generate_local_package_report(
     model_name = str(model_json.get("model_name") or package_dir.name)
     title = title or f"EdgeAI-DeployKit 本地推理报告：{model_name}"
 
-    label_map, label_map_path = _load_label_map(package_dir)
+    label_candidates: List[Path] = []
+    configured_label_map = output_cfg.get("label_map")
+    if configured_label_map:
+        configured = Path(str(configured_label_map))
+        label_candidates.extend([
+            package_dir / configured,
+            Path(str(configured_label_map)),
+            Path(__file__).resolve().parents[1] / configured,
+        ])
+    label_map, label_map_path = _load_label_map(package_dir, label_candidates)
     topk = list(local_result.get("topk") or [])
     enriched_topk: List[Dict[str, Any]] = []
     for item in topk:

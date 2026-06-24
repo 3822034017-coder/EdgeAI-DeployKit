@@ -43,6 +43,8 @@ INCLUDE_FILES = [
     "RELEASE_NOTES.md",
     "PRODUCT_UI_OPERATION_GUIDE.md",
     "docker-compose.product.yml",
+    "start-windows.bat",
+    "stop-windows.bat",
 ]
 
 EXCLUDED_NAMES = {
@@ -212,6 +214,27 @@ This package contains the local WebUI, FastAPI backend, `edgeai` CLI source,
 task-aware local inference flow, and report generation code.
 
 ## Quick Start
+
+### Windows
+
+Double-click:
+
+```text
+start-windows.bat
+```
+
+The first run creates `.venv`, installs Python dependencies, installs WebUI
+dependencies, starts the FastAPI backend and Next.js WebUI, then opens:
+
+```text
+http://127.0.0.1:3000/workspace
+```
+
+Stop both services:
+
+```text
+stop-windows.bat
+```
 
 ### Linux
 

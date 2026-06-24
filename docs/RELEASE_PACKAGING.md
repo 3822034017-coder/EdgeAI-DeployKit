@@ -46,6 +46,8 @@ Artifacts are written under `release_dist/` as:
 - `models/`, `examples/`, `templates/`, `configs/`, `docs/`
 - `README.md`, `README_PRODUCT_UI.md`, and `RELEASE_NOTES.md`
 - platform launcher scripts
+  - Windows: `start-windows.bat`, `stop-windows.bat`, `scripts/start-windows.ps1`
+  - Linux/macOS: shell launchers
 
 ## What Is Excluded
 

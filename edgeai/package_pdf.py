@@ -152,6 +152,221 @@ hr {{ border:none; border-top:1px solid #e5e7eb; margin:18px 0; }}
 """
 
 
+def _reportlab_font_candidates() -> list[Path]:
+    return [
+        Path("C:/Windows/Fonts/msyh.ttc"),
+        Path("C:/Windows/Fonts/simhei.ttf"),
+        Path("C:/Windows/Fonts/simsun.ttc"),
+        Path("/usr/share/fonts/google-noto-cjk/NotoSansCJKsc-Regular.otf"),
+        Path("/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc"),
+        Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
+        Path("/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc"),
+        Path("/usr/share/fonts/google-droid-fonts/DroidSansFallback.ttf"),
+        Path("/System/Library/Fonts/PingFang.ttc"),
+        Path("/System/Library/Fonts/STHeiti Medium.ttc"),
+    ]
+
+
+def _register_reportlab_font() -> str:
+    try:
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+    except Exception:
+        return "Helvetica"
+
+    for path in _reportlab_font_candidates():
+        if not path.exists():
+            continue
+        try:
+            name = "EdgeAICJK"
+            if path.suffix.lower() == ".ttc":
+                try:
+                    pdfmetrics.registerFont(TTFont(name, str(path), subfontIndex=0))
+                except TypeError:
+                    pdfmetrics.registerFont(TTFont(name, str(path)))
+            else:
+                pdfmetrics.registerFont(TTFont(name, str(path)))
+            return name
+        except Exception:
+            continue
+    return "Helvetica"
+
+
+def _markdown_to_pdf_reportlab(md_path: Path, pdf_path: Path) -> Path:
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import mm
+        from reportlab.platypus import Image, Paragraph, Preformatted, SimpleDocTemplate, Spacer, Table, TableStyle
+    except Exception as exc:
+        raise RuntimeError("reportlab is not installed") from exc
+
+    base = md_path.parent.resolve()
+    text = md_path.read_text(encoding="utf-8", errors="replace")
+    font_name = _register_reportlab_font()
+    code_font = font_name if font_name != "Helvetica" else "Courier"
+
+    styles = getSampleStyleSheet()
+    body = ParagraphStyle(
+        "EdgeAIBody",
+        parent=styles["BodyText"],
+        fontName=font_name,
+        fontSize=9.5,
+        leading=14,
+        textColor=colors.HexColor("#0f172a"),
+        spaceAfter=5,
+    )
+    h1 = ParagraphStyle("EdgeAIH1", parent=body, fontSize=17, leading=22, spaceAfter=10)
+    h2 = ParagraphStyle("EdgeAIH2", parent=body, fontSize=13.5, leading=18, spaceBefore=10, spaceAfter=7)
+    h3 = ParagraphStyle("EdgeAIH3", parent=body, fontSize=11.5, leading=15, spaceBefore=7, spaceAfter=5)
+    quote = ParagraphStyle(
+        "EdgeAIQuote",
+        parent=body,
+        leftIndent=8,
+        borderColor=colors.HexColor("#38bdf8"),
+        borderWidth=1,
+        borderPadding=5,
+        backColor=colors.HexColor("#f8fafc"),
+    )
+    code = ParagraphStyle(
+        "EdgeAICode",
+        parent=body,
+        fontName=code_font,
+        fontSize=7.5,
+        leading=10,
+        backColor=colors.HexColor("#f1f5f9"),
+        borderPadding=4,
+    )
+
+    def paragraph(value: str, style: ParagraphStyle = body) -> Paragraph:
+        escaped = html.escape(value)
+        escaped = re.sub(r"`([^`]+)`", lambda m: f'<font name="{code_font}">{m.group(1)}</font>', escaped)
+        escaped = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", escaped)
+        return Paragraph(escaped, style)
+
+    def image_flowable(src: str, alt: str):
+        src_path = Path(src.strip())
+        if not src_path.is_absolute():
+            src_path = (base / src_path).resolve()
+        if not src_path.exists():
+            return paragraph(f"Image not found: {src}", quote)
+        img = Image(str(src_path))
+        max_w = A4[0] - 40 * mm
+        max_h = A4[1] - 70 * mm
+        scale = min(max_w / max(img.imageWidth, 1), max_h / max(img.imageHeight, 1), 1.0)
+        img.drawWidth = img.imageWidth * scale
+        img.drawHeight = img.imageHeight * scale
+        return [img, paragraph(alt, body), Spacer(1, 5)]
+
+    def flush_table(rows: list[list[str]], story: list) -> None:
+        if not rows:
+            return
+        col_count = max(len(r) for r in rows)
+        normalized = [r + [""] * (col_count - len(r)) for r in rows]
+        data = [[paragraph(cell, body) for cell in row] for row in normalized]
+        table = Table(data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ("FONTNAME", (0, 0), (-1, -1), font_name),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#dbe3ef")),
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#edf2f7")),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 4),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ]))
+        story.append(table)
+        story.append(Spacer(1, 7))
+
+    story: list = []
+    table_rows: list[list[str]] = []
+    in_code = False
+    code_lines: list[str] = []
+
+    def close_code() -> None:
+        nonlocal in_code, code_lines
+        if in_code:
+            story.append(Preformatted("\n".join(code_lines), code))
+            story.append(Spacer(1, 5))
+            in_code = False
+            code_lines = []
+
+    for raw in text.splitlines():
+        line = raw.rstrip("\n")
+        stripped = line.strip()
+
+        if stripped.startswith("```"):
+            flush_table(table_rows, story); table_rows = []
+            if in_code:
+                close_code()
+            else:
+                in_code = True
+                code_lines = []
+            continue
+        if in_code:
+            code_lines.append(line)
+            continue
+
+        if stripped.startswith("|") and stripped.endswith("|"):
+            cells = [c.strip() for c in stripped.strip("|").split("|")]
+            if cells and all(re.fullmatch(r":?-{3,}:?", c.replace(" ", "")) for c in cells):
+                continue
+            table_rows.append(cells)
+            continue
+
+        flush_table(table_rows, story); table_rows = []
+
+        if not stripped:
+            story.append(Spacer(1, 4))
+            continue
+        match_img = re.match(r"!\[([^\]]*)\]\(([^)]+)\)", stripped)
+        if match_img:
+            flow = image_flowable(match_img.group(2), match_img.group(1))
+            if isinstance(flow, list):
+                story.extend(flow)
+            else:
+                story.append(flow)
+            continue
+        if stripped == "---":
+            story.append(Spacer(1, 8))
+            continue
+        if stripped.startswith("# "):
+            story.append(paragraph(stripped[2:].strip(), h1))
+        elif stripped.startswith("## "):
+            story.append(paragraph(stripped[3:].strip(), h2))
+        elif stripped.startswith("### "):
+            story.append(paragraph(stripped[4:].strip(), h3))
+        elif stripped.startswith(">"):
+            story.append(paragraph(stripped[1:].strip(), quote))
+        elif stripped.startswith("- "):
+            story.append(paragraph("- " + stripped[2:].strip(), body))
+        else:
+            story.append(paragraph(stripped, body))
+
+    close_code()
+    flush_table(table_rows, story)
+
+    if not story:
+        story.append(paragraph(md_path.name, body))
+
+    tmp_path = pdf_path.with_suffix(pdf_path.suffix + ".tmp")
+    if tmp_path.exists():
+        tmp_path.unlink()
+    doc = SimpleDocTemplate(
+        str(tmp_path),
+        pagesize=A4,
+        rightMargin=16 * mm,
+        leftMargin=16 * mm,
+        topMargin=18 * mm,
+        bottomMargin=18 * mm,
+        title=md_path.stem,
+    )
+    doc.build(story)
+    tmp_path.replace(pdf_path)
+    return pdf_path
+
+
 def markdown_to_pdf_strict(md_path: Path, pdf_path: Path, html_path: Optional[Path] = None) -> Path:
     md_path = Path(md_path).expanduser().resolve()
     pdf_path = Path(pdf_path).expanduser().resolve()
@@ -178,16 +393,22 @@ def markdown_to_pdf_strict(md_path: Path, pdf_path: Path, html_path: Optional[Pa
         HTML(filename=str(html_path), base_url=str(md_path.parent.resolve())).write_pdf(str(pdf_path))
     except Exception as weasy_exc:
         if shutil.which("pandoc"):
-            subprocess.run([
-                "pandoc", str(md_path), "-o", str(pdf_path),
-                "--resource-path", str(md_path.parent.resolve()),
-                "-V", "geometry:margin=2cm",
-            ], check=True, timeout=60)
-        else:
-            raise RuntimeError(
-                "failed to create package-local PDF with weasyprint, and pandoc is unavailable: "
-                + repr(weasy_exc)
-            )
+            try:
+                subprocess.run([
+                    "pandoc", str(md_path), "-o", str(pdf_path),
+                    "--resource-path", str(md_path.parent.resolve()),
+                    "-V", "geometry:margin=2cm",
+                ], check=True, timeout=60)
+            except Exception:
+                pass
+        if not pdf_path.exists() or pdf_path.stat().st_size <= 0:
+            try:
+                _markdown_to_pdf_reportlab(md_path, pdf_path)
+            except Exception as reportlab_exc:
+                raise RuntimeError(
+                    "failed to create package-local PDF with weasyprint, pandoc, and reportlab: "
+                    + repr(reportlab_exc)
+                ) from weasy_exc
 
     if not pdf_path.exists() or pdf_path.stat().st_size <= 0:
         raise RuntimeError(f"PDF was not created: {pdf_path}")
