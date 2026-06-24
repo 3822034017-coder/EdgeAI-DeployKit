@@ -1019,6 +1019,26 @@ def convert_model(
         if requirements.get("install_commands"):
             if _auto_install_conversion_deps(requirements, package_dir, warnings):
                 continue
+        suggested_params = requirements.get("suggested_params") if isinstance(requirements.get("suggested_params"), dict) else {}
+        auto_filled = False
+        for name in list(requirements.get("missing_params") or []):
+            value = suggested_params.get(name)
+            if value not in (None, ""):
+                params[name] = value
+                if name == "input_shape":
+                    input_shape = str(value)
+                elif name == "input_name":
+                    input_name = str(value)
+                elif name == "output_name":
+                    output_name = str(value)
+                elif name == "arch":
+                    arch = str(value)
+                elif name == "feature_count":
+                    feature_count = int(value)
+                auto_filled = True
+        if auto_filled:
+            warnings.append("Auto-filled missing conversion parameters from model intelligence suggestions.")
+            continue
         if not requirements.get("missing_params"):
             break
         allow_prompt = sys.stdin.isatty() if interactive is None else bool(interactive)
