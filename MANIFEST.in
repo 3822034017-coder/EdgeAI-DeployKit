@@ -1,0 +1,26 @@
+include pyproject.toml
+include Dockerfile
+include docker-compose.yml
+include .dockerignore
+include run-board.sh
+
+recursive-include board *.py
+recursive-include edgeai *.py *.txt *.md
+recursive-include webui *.py
+recursive-include templates *.j2
+recursive-include cmake *.cmake
+recursive-include docker Dockerfile.*
+recursive-include qemu-demo *.sh
+recursive-include scripts *.sh *.py
+recursive-include .streamlit *.toml
+
+exclude docker/gcc-linaro-*.tar.xz
+prune outputs
+prune reports
+prune third_party
+prune build
+prune models
+prune examples
+prune .git
+prune __pycache__
+prune *.egg-info

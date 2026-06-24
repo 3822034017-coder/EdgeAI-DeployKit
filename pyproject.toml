@@ -1,0 +1,70 @@
+[project]
+name = "edgeai-deploykit"
+version = "0.1.0"
+description = "A cross-platform local AI model deployment toolkit with WebUI, CLI, ONNX Runtime inference, and report generation"
+requires-python = ">=3.9"
+dependencies = [
+    "typer",
+    "pydantic",
+    "jinja2",
+    "psutil",
+    "onnx",
+    "onnxruntime",
+    "onnxsim",
+    "numpy",
+    "pillow",
+    "opencv-python",
+    "sympy",
+    "fastapi",
+    "uvicorn",
+    "python-multipart",
+]
+
+[project.optional-dependencies]
+webui = ["streamlit", "pandas"]
+pdf   = ["weasyprint"]
+pytorch = ["torch", "torchvision"]
+tensorflow = ["tensorflow-cpu", "tf2onnx", "h5py"]
+full  = ["edgeai-deploykit[webui,pdf,pytorch,tensorflow]"]
+
+[project.scripts]
+edgeai = "edgeai.cli:app"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["edgeai*", "backend*", "board*", "webui*"]
+exclude = ["outputs*", "reports*", "templates*", "docker*", "cmake*", "third_party*", "qemu-demo*", "docs*","tests*"]
+
+[tool.setuptools.package-data]
+edgeai = ["labels/*.txt", "labels/*.md"]
+webui  = ["*"]
+
+[tool.setuptools.data-files]
+"edgeai_deploykit/templates/classification" = [
+    "templates/classification/*.j2",
+]
+"edgeai_deploykit/cmake" = [
+    "cmake/*.cmake",
+]
+"edgeai_deploykit/docker" = [
+    "docker/Dockerfile.*",
+]
+"edgeai_deploykit/qemu-demo" = [
+    "qemu-demo/*.sh",
+]
+"edgeai_deploykit/scripts" = [
+    "scripts/*.sh",
+    "scripts/*.py",
+]
+"edgeai_deploykit/webui" = [
+    "webui/*.py",
+]
+".streamlit" = [
+    ".streamlit/config.toml",
+]

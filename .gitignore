@@ -1,0 +1,91 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Python env / package build
+.venv/
+venv/
+env/
+*.egg-info/
+build/
+dist/
+*.whl
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.onnx
+*.om
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.hdf5
+*.keras
+*.tflite
+*.npy
+*.npz
+
+# Node / Next.js
+node_modules/
+.pnpm-store/
+.next/
+out/
+.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Product UI local/generated files
+product-ui/node_modules/
+product-ui/.next/
+product-ui/tsconfig.tsbuildinfo
+product-ui/**/*.backup*
+product-ui/**/*.stable*
+product-ui/app.backup*/
+product-ui/components.backup*/
+product-ui/product-ui/
+
+# Runtime outputs
+outputs/
+inputs/
+reports/
+release_dist/
+convert.log
+
+# Old duplicated project copies / generated packages
+edge-ai-deploy-kit/
+edgeai-product-ui-v2-refactor/
+product-ui.backup*/
+backups/
+*.backup*
+*backup*/
+
+# External cloned repositories
+external/
+
+# Large third-party/runtime archives
+third_party/
+docker/*.tar
+docker/*.tar.gz
+docker/*.tgz
+docker/*.tar.xz
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Sensitive local config
+.env
+.env.*
+!.env.example

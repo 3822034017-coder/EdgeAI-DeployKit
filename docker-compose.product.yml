@@ -1,0 +1,31 @@
+services:
+  api:
+    image: python:3.11-slim
+    working_dir: /workspace
+    command: bash -lc "pip install -r backend/requirements.txt && pip install -e . --no-build-isolation || true && uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/workspace
+      - ./outputs:/workspace/outputs
+      - ./reports:/workspace/reports
+      - ./inputs:/workspace/inputs
+      - ${HOME}/.ssh:/root/.ssh:ro
+    environment:
+      EDGEAI_PROJECT_ROOT: /workspace
+      EDGEAI_OUTPUTS: /workspace/outputs
+      EDGEAI_REPORTS: /workspace/reports
+      EDGEAI_INPUTS: /workspace/inputs
+
+  web:
+    image: node:22-alpine
+    working_dir: /workspace/product-ui
+    command: sh -lc "npm install && npm run dev"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/workspace
+    environment:
+      NEXT_PUBLIC_API_BASE: http://localhost:8000
+    depends_on:
+      - api

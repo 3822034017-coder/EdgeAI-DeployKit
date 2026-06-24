@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  edgeai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: edgeai-deploykit:latest
+    container_name: edgeai-console
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./outputs:/workspace/outputs
+      - ./reports:/workspace/reports
+      - ./models:/workspace/models:ro
+      - ./photo:/workspace/photo:ro
+      - ${HOME}/.ssh:/root/.ssh:ro
+    environment:
+      - EDGEAI_OUTPUTS=/workspace/outputs
+      - EDGEAI_REPORTS=/workspace/reports
+    network_mode: host
+    restart: unless-stopped
