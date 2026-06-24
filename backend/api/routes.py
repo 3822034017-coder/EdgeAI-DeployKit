@@ -1073,46 +1073,28 @@ def _edgeai_current_run_v4_resolve(mode="auto", package_name=None):
 def _edgeai_current_run_v4_markdown_to_pdf(md_path, pdf_path):
     """Render current-run Markdown to PDF.
 
-    Do not use the old raw-<pre> fallback. Prefer the package-local Markdown
-    renderer already defined in this file because it supports headings, tables,
-    blockquotes, fenced code, inline code and package-relative images such as
-    source_input.png / local_topk_result.png.
+    Use the same strict package-local renderer as report generation. On Windows,
+    WeasyPrint may be importable while its GTK/Pango runtime DLLs are missing,
+    so this path must keep the reportlab fallback available.
     """
     from pathlib import Path as _Path
     from fastapi import HTTPException as _HTTPException
 
     md_path = _Path(md_path)
     pdf_path = _Path(pdf_path)
-    pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    html_path = pdf_path.with_suffix(".html")
 
     if not md_path.exists() or not md_path.is_file():
         raise _HTTPException(status_code=404, detail=f"markdown report not found: {md_path}")
 
     try:
-        from weasyprint import HTML as _HTML
+        from edgeai.package_pdf import markdown_to_pdf_strict as _markdown_to_pdf_strict
+
+        return str(_markdown_to_pdf_strict(md_path=md_path, pdf_path=pdf_path, html_path=html_path))
     except Exception as exc:
-        raise RuntimeError(f"weasyprint is required to render Markdown PDF: {exc}")
-
-    # Use the strongest renderer currently present in routes.py.
-    try:
-        html_text = _edgeai_pkg_report_markdown_to_html_v2(md_path)  # type: ignore[name-defined]
-    except Exception:
-        try:
-            html_text = _edgeai_current_markdown_to_html_v2(md_path)  # type: ignore[name-defined]
-        except Exception as exc:
-            raise RuntimeError(f"failed to render Markdown to HTML: {exc}")
-
-    try:
-        if pdf_path.exists():
-            pdf_path.unlink()
-    except Exception:
-        pass
-
-    _HTML(string=html_text, base_url=str(md_path.parent.resolve())).write_pdf(str(pdf_path))
-
-    if not pdf_path.exists() or pdf_path.stat().st_size <= 0:
-        raise RuntimeError(f"PDF was not created: {pdf_path}")
-    return str(pdf_path)
+        if pdf_path.exists() and pdf_path.stat().st_size > 0:
+            return str(pdf_path)
+        raise RuntimeError(f"failed to create current-run PDF: {exc}") from exc
 
 
 @router.get("/current-run-report-v4/pdf")
