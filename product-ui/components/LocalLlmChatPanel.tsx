@@ -15,7 +15,7 @@ type LocalLlmChatPanelProps = {
 };
 
 function buildPrompt(messages: ChatMessage[], nextUserMessage: string) {
-  if (messages.length === 0) return `Please answer briefly: ${nextUserMessage.trim()}`;
+  if (messages.length === 0) return nextUserMessage.trim();
   const turns = messages
     .slice(-6)
     .map((item) => `${item.role === "user" ? "User said" : "Assistant replied"}: ${item.content.trim()}`)
@@ -51,6 +51,7 @@ export function LocalLlmChatPanel({ packageName, onRefresh, onOpenReports }: Loc
   const [error, setError] = React.useState("");
 
   const validPackage = Boolean(packageName && packageName !== "model" && packageName !== "<package>");
+  const genericPackage = packageName === "model_local" || packageName === "model";
 
   async function sendMessage() {
     const text = input.trim();
@@ -97,6 +98,9 @@ export function LocalLlmChatPanel({ packageName, onRefresh, onOpenReports }: Loc
           <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-300">
             当前 package 会作为本地 GGUF 部署运行，消息直接发送到本机 llama.cpp runtime，不调用云端模型。
           </p>
+          <p className="mt-2 max-w-3xl text-xs leading-6 text-amber-100/85">
+            对话质量取决于模型本身。建议上传文件名包含 Instruct / Chat 的 GGUF，例如 Qwen、Phi、Gemma、DeepSeek、Zephyr 等指令模型；基础续写模型可以部署，但可能答非所问。
+          </p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-xs text-slate-300">
           <div className="text-slate-500">Package</div>
@@ -105,6 +109,11 @@ export function LocalLlmChatPanel({ packageName, onRefresh, onOpenReports }: Loc
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_220px]">
+        {genericPackage ? (
+          <div className="lg:col-span-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4 text-xs leading-6 text-amber-100">
+            当前 package 名是通用的 {packageName}。如果这是从某个目录里的 model.gguf 导入的，建议用模型真实名称重新命名 package，方便同时部署多个 GGUF 模型。
+          </div>
+        ) : null}
         <div className="min-h-[320px] rounded-2xl border border-white/10 bg-black/25 p-4">
           <div className="flex h-[300px] flex-col gap-3 overflow-auto pr-1">
             {messages.length === 0 ? (

@@ -51,15 +51,17 @@ const FRAMEWORK_OPTIONS: Array<{ value: Framework; label: string }> = [
 ];
 
 function cleanName(value: unknown) {
-  const raw = String(value || "user_model")
+  const parts = String(value || "user_model")
     .trim()
     .replace(/\\/g, "/")
     .split("/")
-    .filter(Boolean)
-    .pop() || "user_model";
+    .filter(Boolean);
+  const raw = parts.pop() || "user_model";
+  const parent = parts.pop() || "user_model";
 
   const withoutExt = raw.replace(/\.(onnx|pt|pth|ckpt|h5|hdf5|keras|pb|tflite|pkl|joblib|sav|bst|xgb|lgb|gguf|txt|json|zip)$/i, "");
-  const cleaned = withoutExt.replace(/[^A-Za-z0-9_.-]+/g, "_").replace(/^_+|_+$/g, "");
+  const base = withoutExt === "model" || withoutExt.startsWith("model_") ? parent : withoutExt;
+  const cleaned = base.replace(/[^A-Za-z0-9_.-]+/g, "_").replace(/^_+|_+$/g, "");
   return cleaned || "user_model";
 }
 

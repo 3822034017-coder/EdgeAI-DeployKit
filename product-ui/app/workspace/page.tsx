@@ -92,15 +92,16 @@ function safeJson(value: string | null) {
 }
 
 function cleanName(value: unknown) {
-  return String(value || "")
+  const parts = String(value || "")
     .trim()
     .replace(/\\/g, "/")
     .split("/")
-    .filter(Boolean)
-    .pop()
-    ?.replace(/\.onnx$/i, "")
-    .replace(/[^a-zA-Z0-9_.-]+/g, "_")
-    .replace(/^_+|_+$/g, "") || "";
+    .filter(Boolean);
+  const raw = parts.pop() || "";
+  const parent = parts.pop() || "";
+  const stem = raw.replace(/\.(onnx|pt|pth|ckpt|h5|hdf5|keras|pb|tflite|pkl|joblib|sav|bst|xgb|lgb|gguf|txt|json|zip)$/i, "");
+  const base = stem === "model" || stem.startsWith("model_") ? parent : stem;
+  return base.replace(/[^a-zA-Z0-9_.-]+/g, "_").replace(/^_+|_+$/g, "") || "";
 }
 
 function extractPackageName(value: unknown): string {
@@ -169,13 +170,15 @@ function modelSearchText(model: ModelItem) {
 function displayPackageName(model?: ModelItem) {
   if (!model) return "model";
   const parts = model.path.split("/").filter(Boolean);
-  const file = parts.at(-1) || model.name || "model.onnx";
+  const file = parts.at(-1) || model.name || "model";
   const parent = parts.at(-2);
   const rawName = String(model.name || "").trim();
+  const stripExt = (value: string) =>
+    value.replace(/\.(onnx|pt|pth|ckpt|h5|hdf5|keras|pb|tflite|pkl|joblib|sav|bst|xgb|lgb|gguf|txt|json|zip)$/i, "");
 
-  if (parent && (rawName === "model" || rawName === "model.onnx" || file === "model.onnx")) return parent;
-  if (rawName && rawName !== "model" && rawName !== "model.onnx") return rawName.replace(/\.onnx$/i, "");
-  return parent || file.replace(/\.onnx$/i, "") || "model";
+  if (parent && (stripExt(rawName) === "model" || stripExt(file) === "model")) return cleanName(parent);
+  if (rawName && stripExt(rawName) !== "model") return cleanName(stripExt(rawName));
+  return cleanName(parent || stripExt(file)) || "model";
 }
 
 function edgeaiModelType(model?: ModelItem) {

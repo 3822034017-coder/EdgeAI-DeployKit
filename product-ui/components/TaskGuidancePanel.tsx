@@ -56,15 +56,16 @@ const ACTIVE_LOCAL_KEYS = [
 ];
 
 function cleanName(value: unknown) {
-  return String(value || "")
+  const parts = String(value || "")
     .trim()
     .replace(/\\/g, "/")
     .split("/")
-    .filter(Boolean)
-    .pop()
-    ?.replace(/\.onnx$/i, "")
-    .replace(/[^a-zA-Z0-9_.-]+/g, "_")
-    .replace(/^_+|_+$/g, "") || "";
+    .filter(Boolean);
+  const raw = parts.pop() || "";
+  const parent = parts.pop() || "";
+  const stem = raw.replace(/\.(onnx|pt|pth|ckpt|h5|hdf5|keras|pb|tflite|pkl|joblib|sav|bst|xgb|lgb|gguf|txt|json|zip)$/i, "");
+  const base = stem === "model" || stem.startsWith("model_") ? parent : stem;
+  return base.replace(/[^a-zA-Z0-9_.-]+/g, "_").replace(/^_+|_+$/g, "") || "";
 }
 
 function safeJson(value: string | null) {

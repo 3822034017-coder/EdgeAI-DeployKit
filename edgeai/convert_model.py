@@ -865,9 +865,11 @@ def convert_llm_package(source: Path, package_dir: Path, warnings: list[str]) ->
     source_model_dir.mkdir(parents=True, exist_ok=True)
 
     model_path: Path
+    original_model_name = source.name
     if source.is_file() and source.suffix.lower() == ".gguf":
         model_path = package_dir / "model.gguf"
         shutil.copy2(source, model_path)
+        original_model_name = source.name
         runtime = "llama.cpp"
         runnable = True
     elif source.is_dir():
@@ -875,6 +877,7 @@ def convert_llm_package(source: Path, package_dir: Path, warnings: list[str]) ->
         if ggufs:
             model_path = package_dir / "model.gguf"
             shutil.copy2(ggufs[0], model_path)
+            original_model_name = ggufs[0].name
             runtime = "llama.cpp"
             runnable = True
         else:
@@ -889,13 +892,75 @@ def convert_llm_package(source: Path, package_dir: Path, warnings: list[str]) ->
     else:
         raise RuntimeError(f"unsupported LLM source: {source}; provide .gguf or a HuggingFace model directory")
 
+    model_name_lower = original_model_name.lower()
+    chat_template = None
+    model_family = "gguf"
+    is_chat_model = any(
+        token in model_name_lower
+        for token in (
+            "instruct",
+            "chat",
+            "assistant",
+            "qwen",
+            "deepseek",
+            "phi",
+            "gemma",
+            "zephyr",
+            "openchat",
+            "llama",
+            "mistral",
+            "vicuna",
+            "smollm",
+        )
+    )
+    if "qwen" in model_name_lower:
+        model_family = "qwen"
+        chat_template = "chatml"
+    elif "deepseek" in model_name_lower:
+        model_family = "deepseek"
+        chat_template = "deepseek"
+    elif "llama-3" in model_name_lower or "llama3" in model_name_lower:
+        model_family = "llama"
+        chat_template = "llama3"
+    elif "llama-2" in model_name_lower or "llama2" in model_name_lower:
+        model_family = "llama"
+        chat_template = "llama2"
+    elif "mistral" in model_name_lower:
+        model_family = "mistral"
+    elif "vicuna" in model_name_lower:
+        model_family = "vicuna"
+        chat_template = "vicuna"
+    elif "smollm" in model_name_lower:
+        model_family = "smollm"
+    elif "phi4" in model_name_lower:
+        model_family = "phi"
+        chat_template = "phi4"
+    elif "phi" in model_name_lower:
+        model_family = "phi"
+        chat_template = "phi3"
+    elif "gemma" in model_name_lower:
+        model_family = "gemma"
+        chat_template = "gemma"
+    elif "zephyr" in model_name_lower:
+        model_family = "zephyr"
+        chat_template = "zephyr"
+    elif "openchat" in model_name_lower:
+        model_family = "openchat"
+        chat_template = "openchat"
+    if not is_chat_model and model_path.suffix.lower() == ".gguf":
+        warnings.append("This GGUF does not look like an instruct/chat model. It is deployable, but chat answers may be off-topic. Prefer GGUF files with Instruct/Chat in the model name.")
+
     signature = {
         "model_path": str(model_path),
         "format": "gguf" if model_path.suffix.lower() == ".gguf" else "huggingface_directory",
         "inputs": [{"name": "prompt", "shape": ["text"], "dtype": "string", "dynamic": True, "layout_guess": "text"}],
         "outputs": [{"name": "response", "shape": ["text"], "dtype": "string", "dynamic": True, "layout_guess": "text"}],
         "runtime": runtime,
+        "original_model_name": original_model_name,
         "has_dynamic_shape": True,
+        "model_family": model_family,
+        "chat_template": chat_template,
+        "chat_model": is_chat_model,
     }
     operator_report = {
         "model_path": str(model_path),
@@ -909,17 +974,26 @@ def convert_llm_package(source: Path, package_dir: Path, warnings: list[str]) ->
         "framework": "llm",
         "source_model": str(source),
         "copied_source": str(model_path),
+        "original_model_name": original_model_name,
         "runtime": runtime,
         "runnable": runnable,
         "model_path": model_path.name if model_path.is_file() else model_path.name,
+        "model_family": model_family,
+        "chat_template": chat_template,
+        "chat_model": is_chat_model,
         "stage": "convert",
     }
     llm_runtime = {
         "runtime": runtime,
         "model_path": model_path.name if model_path.is_file() else model_path.name,
+        "original_model_name": original_model_name,
         "provider_order": ["llama_cpp_python", "llama_cpp_cli", "ollama_external"],
-        "default_max_tokens": 256,
-        "default_temperature": 0.7,
+        "model_family": model_family,
+        "chat_template": chat_template,
+        "chat_model": is_chat_model,
+        "system_prompt": "You are a helpful local AI assistant. Answer the user's latest message directly and concisely.",
+        "default_max_tokens": 256 if is_chat_model else 96,
+        "default_temperature": 0.6 if is_chat_model else 0.2,
         "runnable": runnable,
     }
     for name, data in {
