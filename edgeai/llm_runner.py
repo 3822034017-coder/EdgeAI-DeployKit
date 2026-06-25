@@ -99,7 +99,7 @@ def _infer_chat_profile(model_path: Path, cfg: dict[str, Any]) -> dict[str, Any]
         "chat_template": template or None,
         "system_prompt": str(
             cfg.get("system_prompt")
-            or "You are a helpful local AI assistant. Answer the user's latest message directly and concisely."
+            or "You are a helpful local AI assistant. Follow the user's latest request directly, including the requested language, format, and length. Do not repeat the prompt template."
         ),
         "quality_note": None
         if is_chat_like
@@ -114,7 +114,7 @@ def _completion_prompt(prompt: str) -> str:
     text = prompt.strip()
     if not text or "Question:" in text or "Answer:" in text or "User:" in text or "Assistant:" in text:
         return text
-    return f"Answer the following user message directly and briefly.\n\nUser message: {text}\n\nAnswer:"
+    return f"Please follow this user request directly. Do not repeat these instructions.\n\nUser request: {text}\n\nAnswer:"
 
 
 def _run_with_llama_cpp_python(

@@ -991,7 +991,7 @@ def convert_llm_package(source: Path, package_dir: Path, warnings: list[str]) ->
         "model_family": model_family,
         "chat_template": chat_template,
         "chat_model": is_chat_model,
-        "system_prompt": "You are a helpful local AI assistant. Answer the user's latest message directly and concisely.",
+        "system_prompt": "You are a helpful local AI assistant. Follow the user's latest request directly, including the requested language, format, and length. Do not repeat the prompt template.",
         "default_max_tokens": 256 if is_chat_model else 96,
         "default_temperature": 0.6 if is_chat_model else 0.2,
         "runnable": runnable,

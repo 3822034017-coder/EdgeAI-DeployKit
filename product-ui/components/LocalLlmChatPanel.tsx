@@ -18,9 +18,15 @@ function buildPrompt(messages: ChatMessage[], nextUserMessage: string) {
   if (messages.length === 0) return nextUserMessage.trim();
   const turns = messages
     .slice(-6)
-    .map((item) => `${item.role === "user" ? "User said" : "Assistant replied"}: ${item.content.trim()}`)
+    .map((item) => `${item.role === "user" ? "用户" : "助手"}：${item.content.trim()}`)
     .join("\n");
-  return `Previous conversation:\n${turns}\nCurrent user message: ${nextUserMessage.trim()}\nReply briefly:`;
+  return [
+    "以下是历史对话，仅用于理解上下文，不要复述这些内容。",
+    turns,
+    "",
+    `当前用户请求：${nextUserMessage.trim()}`,
+    "请只回答当前用户请求，并严格遵守用户要求的语言、体裁和字数。",
+  ].join("\n");
 }
 
 function extractResponse(payload: unknown) {
@@ -45,7 +51,7 @@ function extractResponse(payload: unknown) {
 export function LocalLlmChatPanel({ packageName, onRefresh, onOpenReports }: LocalLlmChatPanelProps) {
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [input, setInput] = React.useState("Hello, introduce yourself briefly.");
-  const [maxTokens, setMaxTokens] = React.useState(64);
+  const [maxTokens, setMaxTokens] = React.useState(256);
   const [temperature, setTemperature] = React.useState(0.2);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
