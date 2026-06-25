@@ -10,9 +10,19 @@ result, and export a report.
 
 ## Downloads
 
-Latest preview release:
-
+Current preview packages are mirrored in this repository under `release_dist/`.
+The previous GitHub Release page is still available here:
 [v0.2.0-local-preview](https://github.com/HaoWenXinme/EdgeAI-DeployKit/releases/tag/v0.2.0-local-preview)
+
+Current repository package mirrors:
+
+| Platform | Repository download |
+| --- | --- |
+| Windows x86_64 | [EdgeAI-DeployKit-windows-x86_64.zip](https://github.com/HaoWenXinme/EdgeAI-DeployKit/raw/main/release_dist/EdgeAI-DeployKit-windows-x86_64.zip) |
+| macOS Apple Silicon | [EdgeAI-DeployKit-macos-arm64.tar.gz](https://github.com/HaoWenXinme/EdgeAI-DeployKit/raw/main/release_dist/EdgeAI-DeployKit-macos-arm64.tar.gz) |
+| macOS Intel | [EdgeAI-DeployKit-macos-x86_64.tar.gz](https://github.com/HaoWenXinme/EdgeAI-DeployKit/raw/main/release_dist/EdgeAI-DeployKit-macos-x86_64.tar.gz) |
+| Linux x86_64 | [EdgeAI-DeployKit-linux-x86_64.tar.gz](https://github.com/HaoWenXinme/EdgeAI-DeployKit/raw/main/release_dist/EdgeAI-DeployKit-linux-x86_64.tar.gz) |
+| Linux arm64 | [EdgeAI-DeployKit-linux-arm64.tar.gz](https://github.com/HaoWenXinme/EdgeAI-DeployKit/raw/main/release_dist/EdgeAI-DeployKit-linux-arm64.tar.gz) |
 
 | Platform | Package | Notes |
 | --- | --- | --- |
@@ -38,6 +48,8 @@ Latest preview release:
 - Windows x86_64: one-click lightweight starter with runtime health checks and PDF preview.
 - macOS x86_64 / arm64: release packages, install script, start/stop/status script, and WebUI launchers are available.
 - Linux arm64: package is generated; runtime validation should be done on an ARM64 Linux VM or device.
+- GGUF LLM local chat: validated with `SmolLM2-135M-Instruct-Q4_K_M.gguf` and
+  `Qwen2.5-0.5B-Instruct-Q4_K_M.gguf` through the local `llama.cpp` runtime.
 
 Validated model paths:
 
@@ -53,7 +65,10 @@ view:
 - Image classification: upload an image, show TopK labels and scores.
 - Digit classification: upload a digit image, show the predicted digit.
 - Object detection / YOLO-like models: upload an image, show a result image with boxes when the model output is supported.
-- Large language model style workflows: planned as a chat interaction path.
+- Large language model workflows: import/deploy GGUF models and chat locally
+  through `llama.cpp`; instruct/chat GGUF models such as Qwen, Phi, Gemma,
+  DeepSeek, Zephyr, SmolLM, Llama, Mistral, Vicuna, and OpenChat are detected
+  with chat-template metadata where available.
 
 ## Quick Start On Linux
 

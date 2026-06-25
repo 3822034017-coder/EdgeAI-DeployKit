@@ -1,5 +1,27 @@
 # EdgeAI-DeployKit Release Notes
 
+## Local GGUF Chat Preview
+
+Date: 2026-06-25
+
+This update packages the current mature local deployment preview for GitHub:
+
+- Rebuilt Windows x86_64, macOS x86_64, macOS arm64, Linux x86_64, and Linux
+  arm64 archives under `release_dist/`.
+- Added WebUI local GGUF chat flow backed by local `llama.cpp`.
+- Added generic GGUF model-family detection for common instruct/chat models,
+  including Qwen, DeepSeek, Llama, Phi, Gemma, Zephyr, OpenChat, Vicuna,
+  SmolLM, and Mistral.
+- Preserved original GGUF filenames in LLM package metadata so models copied to
+  `model.gguf` still keep their family/template identity.
+- Added warnings for base/completion GGUF models that can deploy but may answer
+  off topic in chat mode.
+- Validated GGUF chat locally with:
+  - `SmolLM2-135M-Instruct-Q4_K_M.gguf`
+  - `qwen2.5-0.5b-instruct-q4_k_m.gguf`
+- Validated Qwen2.5 0.5B Instruct through convert, task init, local run, WebUI
+  backend flow, report generation, and PDF generation.
+
 ## Linux Local Release Candidate
 
 Date: 2026-06-24
