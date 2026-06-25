@@ -43,6 +43,7 @@ INCLUDE_FILES = [
     "RELEASE_NOTES.md",
     "PRODUCT_UI_OPERATION_GUIDE.md",
     "docker-compose.product.yml",
+    "install-runtime-windows.bat",
     "start-windows.bat",
     "stop-windows.bat",
 ]
@@ -221,7 +222,8 @@ Prerequisites:
 
 - Windows 10/11 x86_64
 - Python 3.10-3.12 on PATH
-- Node.js 20+ with Corepack, or a global `pnpm`
+- Node.js 20+ with Corepack, or network access so `start-windows.bat`
+  can download a portable Node.js runtime into `.runtime/`
 - Network access to Python/npm package indexes on first start
 
 Double-click:
@@ -241,6 +243,12 @@ Stop both services:
 
 ```text
 stop-windows.bat
+```
+
+If Python is missing, double-click:
+
+```text
+install-runtime-windows.bat
 ```
 
 ### Linux
@@ -298,7 +306,7 @@ in separate terminals.
 
 1. Windows 10/11 x86_64
 2. Python 3.10/3.11/3.12，安装时勾选 Add python.exe to PATH
-3. Node.js 20 LTS 或更高版本，安装后自带 corepack
+3. Node.js 可以不预装；start-windows.bat 会在缺失时自动下载便携 Node 到 .runtime
 4. 能访问 pip/npm 下载源的网络
 
 使用方法：
@@ -311,8 +319,8 @@ in separate terminals.
 
 如果提示没有环境：
 
-- 没有 Python：安装 Python 3.10-3.12 后重新运行 start-windows.bat
-- 没有 Node.js/corepack：安装 Node.js 20 LTS 后重新运行 start-windows.bat
+- 没有 Python：双击 install-runtime-windows.bat，或手动安装 Python 3.10-3.12 后重新运行 start-windows.bat
+- 没有 Node.js/corepack：start-windows.bat 会自动下载便携 Node；如果下载失败，可设置 NODE_DIST_URL 为可访问镜像后重试
 - Runtime 页面显示 PyTorch/TensorFlow/LLM/Board 为 Optional：这不是启动失败，只表示这些模型类型或板端流程的可选依赖尚未安装
 
 当前轻量包适合有基础运行环境的电脑。完全离线、真正解压即用的版本需要单独发布 portable/full 包，体积会大很多。

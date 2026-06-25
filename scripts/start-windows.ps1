@@ -21,8 +21,88 @@ if ((Split-Path -Leaf $ScriptDir) -ieq "scripts") {
 
 $LogDir = Join-Path $Root "outputs\logs"
 $PidDir = Join-Path $Root "outputs\pids"
+$RuntimeDir = Join-Path $Root ".runtime"
 New-Item -ItemType Directory -Force -Path $LogDir, $PidDir | Out-Null
 $env:COREPACK_ENABLE_DOWNLOAD_PROMPT = "0"
+
+function Add-PathDir([string]$Dir) {
+  if ($Dir -and (Test-Path $Dir)) {
+    $env:PATH = "$Dir;$env:PATH"
+  }
+}
+
+function Add-LocalNodeRuntime {
+  $nodeRoot = Join-Path $Root ".runtime"
+  if (-not (Test-Path $nodeRoot)) {
+    return
+  }
+  $localNode = Get-ChildItem -Path $nodeRoot -Directory -Filter "node-v*-win-x64" -ErrorAction SilentlyContinue |
+    Sort-Object Name -Descending |
+    Select-Object -First 1
+  if ($localNode -and (Test-Path (Join-Path $localNode.FullName "node.exe"))) {
+    Add-PathDir $localNode.FullName
+  }
+}
+
+function Install-PortableNodeRuntime {
+  if ($NoInstall) {
+    return
+  }
+  $version = if ($env:EDGEAI_NODE_VERSION) { $env:EDGEAI_NODE_VERSION } else { "v22.17.1" }
+  if (-not $version.StartsWith("v")) {
+    $version = "v$version"
+  }
+  $folderName = "node-$version-win-x64"
+  $nodeDir = Join-Path $RuntimeDir $folderName
+  $nodeExe = Join-Path $nodeDir "node.exe"
+  if (Test-Path $nodeExe) {
+    Add-PathDir $nodeDir
+    return
+  }
+
+  $baseUrl = if ($env:NODE_DIST_URL) { $env:NODE_DIST_URL.TrimEnd("/") } else { "https://nodejs.org/dist" }
+  $url = "$baseUrl/$version/$folderName.zip"
+  $zipPath = Join-Path $RuntimeDir "$folderName.zip"
+  New-Item -ItemType Directory -Force -Path $RuntimeDir | Out-Null
+  Write-Host "[EdgeAI] Node.js/Corepack not found. Downloading portable Node.js $version..."
+  Write-Host "[EdgeAI] URL: $url"
+  try {
+    Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing
+    Expand-Archive -Path $zipPath -DestinationPath $RuntimeDir -Force
+  } catch {
+    throw @"
+Node.js was not found, and portable Node.js could not be downloaded.
+
+Please install Node.js 20+ / 22+ LTS, or set NODE_DIST_URL to a reachable mirror, then rerun start-windows.bat.
+Example mirror:
+  set NODE_DIST_URL=https://npmmirror.com/mirrors/node
+
+Original error: $($_.Exception.Message)
+"@
+  } finally {
+    Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
+  }
+  if (-not (Test-Path $nodeExe)) {
+    throw "Portable Node.js extraction finished but node.exe was not found: $nodeExe"
+  }
+  Add-PathDir $nodeDir
+}
+
+function Ensure-NodeRuntime {
+  Add-LocalNodeRuntime
+  if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+    Install-PortableNodeRuntime
+  }
+  if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+    throw "Node.js 20+ / 22+ was not found. Install Node.js LTS or rerun with network access so portable Node.js can be downloaded."
+  }
+  if (-not (Get-Command pnpm -ErrorAction SilentlyContinue) -and -not (Get-Command corepack -ErrorAction SilentlyContinue)) {
+    Install-PortableNodeRuntime
+  }
+  if (-not (Get-Command pnpm -ErrorAction SilentlyContinue) -and -not (Get-Command corepack -ErrorAction SilentlyContinue)) {
+    throw "pnpm/Corepack was not found even after preparing Node.js. Install Node.js LTS and rerun start-windows.bat."
+  }
+}
 
 function Find-Python {
   if ($env:PYTHON_BIN) {
@@ -73,7 +153,12 @@ function Find-Python {
     Write-Host "[EdgeAI] python: $($chosen.Exe) $($chosen.Version)"
     return @{ Exe = $chosen.Exe; Args = @() }
   }
-  throw "Python 3.9-3.13 was not found. Install a supported Python version, then rerun start-windows.bat."
+  throw @"
+Python 3.9-3.13 was not found.
+
+Please install Python 3.10/3.11/3.12 and enable "Add python.exe to PATH", then rerun start-windows.bat.
+You can also double-click install-runtime-windows.bat to try installing Python with winget.
+"@
 }
 
 function Invoke-Python($PythonSpec, [string[]]$Arguments) {
@@ -102,6 +187,7 @@ function Get-FreePort([int]$PreferredPort) {
 }
 
 function Invoke-Pnpm([string[]]$Arguments) {
+  Ensure-NodeRuntime
   if (Get-Command pnpm -ErrorAction SilentlyContinue) {
     & pnpm @Arguments
   } elseif (Get-Command corepack -ErrorAction SilentlyContinue) {
@@ -176,6 +262,8 @@ if (-not (Test-Path $VenvPython)) {
   throw "Missing .venv. Run start-windows.bat without -NoInstall first."
 }
 
+Ensure-NodeRuntime
+
 $ApiPort = Get-FreePort $ApiPort
 $UiPort = Get-FreePort $UiPort
 $ApiBase = "http://127.0.0.1:$ApiPort"
@@ -210,11 +298,18 @@ if (-not $healthOk) {
 $UiOut = Join-Path $LogDir "ui.log"
 $UiErr = Join-Path $LogDir "ui.err.log"
 $ProductUi = Join-Path $Root "product-ui"
-$pnpmCommand = if (Get-Command pnpm -ErrorAction SilentlyContinue) { "pnpm" } else { "corepack pnpm" }
+$escapedPath = $env:PATH.Replace("'", "''")
 $uiCommand = @"
 Set-Location '$ProductUi'
+`$env:PATH = '$escapedPath'
 `$env:NEXT_PUBLIC_API_BASE = '$ApiBase'
-& $pnpmCommand dev --hostname 127.0.0.1 --port $UiPort
+if (Test-Path '.\node_modules\next\dist\bin\next') {
+  & node .\node_modules\next\dist\bin\next dev --hostname 127.0.0.1 --port $UiPort
+} elseif (Get-Command pnpm -ErrorAction SilentlyContinue) {
+  & pnpm dev --hostname 127.0.0.1 --port $UiPort
+} else {
+  & corepack pnpm dev --hostname 127.0.0.1 --port $UiPort
+}
 "@
 $uiProcess = Start-Process -FilePath "powershell.exe" -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $uiCommand) -WorkingDirectory $ProductUi -RedirectStandardOutput $UiOut -RedirectStandardError $UiErr -WindowStyle Hidden -PassThru
 Set-Content -Path (Join-Path $PidDir "webui.pid") -Value $uiProcess.Id
