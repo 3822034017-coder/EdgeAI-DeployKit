@@ -276,6 +276,27 @@ For both PyTorch and TensorFlow/Keras conversion support:
 scripts/install-linux.sh --with-pytorch --with-tensorflow
 ```
 
+### macOS
+
+Prerequisites:
+
+- macOS on Intel x86_64 or Apple Silicon arm64
+- Python 3.10+ (`brew install python@3.12` is recommended)
+- Node.js 20+ with Corepack (`brew install node && corepack enable`)
+
+Install and start:
+
+```bash
+./install-macos.sh
+./start-macos.sh
+```
+
+Stop services:
+
+```bash
+./start-macos.sh stop
+```
+
 ### Manual Backend
 
 ```bash
@@ -355,6 +376,14 @@ def stage_target(target: str, clean: bool) -> Path:
     if TARGETS[target]["launcher"] == "sh" and (stage / "scripts" / "start-linux.sh").exists():
         start_path = stage / "start-linux.sh"
         shutil.copy2(stage / "scripts" / "start-linux.sh", start_path)
+        os.chmod(start_path, 0o755)
+    if target.startswith("macos") and (stage / "scripts" / "install-macos.sh").exists():
+        install_path = stage / "install-macos.sh"
+        shutil.copy2(stage / "scripts" / "install-macos.sh", install_path)
+        os.chmod(install_path, 0o755)
+    if target.startswith("macos") and (stage / "scripts" / "start-macos.sh").exists():
+        start_path = stage / "start-macos.sh"
+        shutil.copy2(stage / "scripts" / "start-macos.sh", start_path)
         os.chmod(start_path, 0o755)
     if TARGETS[target]["launcher"] == "sh":
         for script in stage.rglob("*.sh"):

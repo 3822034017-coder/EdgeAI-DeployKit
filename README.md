@@ -1,31 +1,49 @@
 # EdgeAI-DeployKit
 
-EdgeAI-DeployKit is a local AI model deployment toolkit with a WebUI, a FastAPI
-backend, ONNX Runtime local inference, task-aware result rendering, and
-Markdown/PDF report export.
+EdgeAI-DeployKit 是一个面向本地 AI 模型部署的跨平台工具包。用户可以通过
+WebUI 上传自己训练好的模型，工具会自动识别模型类型、转换或导入为本地推理
+package，按任务类型提示上传测试输入，并输出可视化结果与 Markdown/PDF 报告。
 
-The goal is simple: a user uploads a trained model, the toolkit converts or
-imports it into a local ONNX package, detects the task type, asks for the right
-test input, runs local inference, and shows a useful result.
+It is designed for local deployment workflows: upload a model, convert/import it
+into an ONNX or GGUF package, detect the task, run local inference, render the
+result, and export a report.
+
+## Downloads
+
+Latest preview release:
+
+[v0.2.0-local-preview](https://github.com/3822034017-coder/EdgeAI-DeployKit/releases/tag/v0.2.0-local-preview)
+
+| Platform | Package | Notes |
+| --- | --- | --- |
+| Windows x86_64 | [EdgeAI-DeployKit-windows-x86_64.zip](https://github.com/3822034017-coder/EdgeAI-DeployKit/releases/download/v0.2.0-local-preview/EdgeAI-DeployKit-windows-x86_64.zip) | Double-click `start-windows.bat`. If Python is missing, run `install-runtime-windows.bat`. |
+| macOS Apple Silicon | [EdgeAI-DeployKit-macos-arm64.tar.gz](https://github.com/3822034017-coder/EdgeAI-DeployKit/releases/download/v0.2.0-local-preview/EdgeAI-DeployKit-macos-arm64.tar.gz) | For M1/M2/M3/M4 Macs. |
+| macOS Intel | [EdgeAI-DeployKit-macos-x86_64.tar.gz](https://github.com/3822034017-coder/EdgeAI-DeployKit/releases/download/v0.2.0-local-preview/EdgeAI-DeployKit-macos-x86_64.tar.gz) | For Intel Macs. |
+| Linux x86_64 | [EdgeAI-DeployKit-linux-x86_64.tar.gz](https://github.com/3822034017-coder/EdgeAI-DeployKit/releases/download/v0.2.0-local-preview/EdgeAI-DeployKit-linux-x86_64.tar.gz) | Validated first on openEuler/Linux local inference flow. |
+| Linux arm64 | [EdgeAI-DeployKit-linux-arm64.tar.gz](https://github.com/3822034017-coder/EdgeAI-DeployKit/releases/download/v0.2.0-local-preview/EdgeAI-DeployKit-linux-arm64.tar.gz) | For ARM64 Linux VM/device validation. |
+
+## What It Does
+
+- Upload user-trained models from the WebUI.
+- Detect model framework and task type.
+- Convert/import ONNX, PyTorch, TensorFlow/Keras, traditional ML, and GGUF LLM packages where dependencies are available.
+- Run local inference with ONNX Runtime CPU for ONNX packages.
+- Render task-aware results: TopK classification, digit recognition, object detection previews, and LLM chat-style outputs.
+- Export package-local `report.md`, `report.html`, and `report.pdf`.
+- Package releases for Windows, macOS, Linux x86_64, and Linux arm64.
 
 ## Current Status
 
-The Linux local inference path is the primary validated path. Windows packaging
-is now available as a portable zip with a one-click starter.
-
-- Linux x86_64 release package: validated on openEuler 24.03 in VMware.
-- Linux arm64 release package: package is generated; runtime validation should
-  be done on an arm64 Linux VM or device.
-- Windows x86_64 release package: zip package with `start-windows.bat` and
-  `stop-windows.bat`; runtime validation is in progress.
-- macOS packages: release naming and launchers are scaffolded, but full runtime
-  validation is still pending.
+- Linux local inference flow: validated on openEuler 24.03 in VMware.
+- Windows x86_64: one-click lightweight starter with runtime health checks and PDF preview.
+- macOS x86_64 / arm64: release packages, install script, start/stop/status script, and WebUI launchers are available.
+- Linux arm64: package is generated; runtime validation should be done on an ARM64 Linux VM or device.
 
 Validated model paths:
 
 - ONNX import -> local package -> local inference -> task result -> Markdown/PDF report.
-- PyTorch `.pth` / state_dict -> ONNX package on the development Linux env.
-- TensorFlow/Keras H5 -> fallback load -> ONNX package on the development Linux env.
+- PyTorch `.pth` / state_dict -> ONNX package with model intelligence parameter suggestions.
+- TensorFlow/Keras H5 -> fallback load -> ONNX package.
 
 ## Supported Tasks
 
@@ -128,8 +146,38 @@ Optional conversion dependencies can be installed from PowerShell:
 .\start-windows.bat -WithTensorflow
 ```
 
-Windows prerequisites: Python 3.9-3.13 and Node.js 20+ with Corepack. Python
-3.10-3.12 is recommended for best AI package compatibility.
+Windows prerequisites: Python 3.9-3.13. Python 3.10-3.12 is recommended for
+best AI package compatibility. Node.js is prepared automatically when missing
+if the machine can download the portable Node runtime.
+
+## Quick Start On macOS
+
+Download the package for your Mac:
+
+- `EdgeAI-DeployKit-macos-arm64.tar.gz` for Apple Silicon Macs.
+- `EdgeAI-DeployKit-macos-x86_64.tar.gz` for Intel Macs.
+
+Install prerequisites with Homebrew:
+
+```bash
+brew install python@3.12 node
+corepack enable
+```
+
+Extract, install, and start:
+
+```bash
+tar -xzf EdgeAI-DeployKit-macos-arm64.tar.gz
+cd EdgeAI-DeployKit-macos-arm64
+./install-macos.sh
+./start-macos.sh
+```
+
+Stop services:
+
+```bash
+./start-macos.sh stop
+```
 
 ## WebUI Flow
 
@@ -183,6 +231,7 @@ backup files.
 
 - Linux release guide: `docs/LINUX_LOCAL_RELEASE.md`
 - Windows release guide: `docs/WINDOWS_LOCAL_RELEASE.md`
+- macOS release guide: `docs/MACOS_LOCAL_RELEASE.md`
 - Release packaging notes: `docs/RELEASE_PACKAGING.md`
 - Local task system notes: `docs/LOCAL_TASK_SYSTEM_GUIDE.md`
 - Conversion wizard notes: `docs/CONVERT_SMART_WIZARD_GUIDE.md`
